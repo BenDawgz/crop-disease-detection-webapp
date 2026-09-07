@@ -25,8 +25,9 @@ COPY . .
 RUN if [ -f best_model.h5 ] && head -1 best_model.h5 | grep -q "version https://git-lfs"; then \
     echo "Model is an LFS pointer, fetching real file..." && \
     git lfs install --skip-repo && \
-    git clone --no-checkout --filter=blob:none https://github.com/iwankobb/crop-disease-detection-webapp.git /tmp/repo && \
-    cd /tmp/repo && git lfs pull --include="best_model.h5" && git checkout main -- best_model.h5 && \
+    GIT_LFS_SKIP_SMUDGE=1 git clone --depth=1 https://github.com/BenDawgz/crop-disease-detection-webapp.git /tmp/repo && \
+    cd /tmp/repo && git lfs pull --include="best_model.h5" && \
+    test "$(stat -c%s best_model.h5)" -gt 1000000 && \
     cp /tmp/repo/best_model.h5 /app/best_model.h5 && \
     rm -rf /tmp/repo && \
     echo "Model downloaded successfully"; \
