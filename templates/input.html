@@ -1,0 +1,474 @@
+{% extends 'base.html' %} {% block title %}BID CROP DETECTOR — Upload{% endblock title %} {%
+block body %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+
+<style>
+  /* ── tokens ── */
+  :root {
+    --surface: #fafaf7;
+    --card-bg: #ffffff;
+    --ink: #1a1a1a;
+    --ink-soft: #6e6e6e;
+    --ink-muted: #a3a3a3;
+    --border: #e8e6e1;
+    --border-hover: #c4c1ba;
+    --accent: #3d7c4a;
+    --accent-hover: #326640;
+    --accent-light: rgba(61, 124, 74, 0.06);
+    --radius: 12px;
+    --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-hover: 0 2px 8px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.1);
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── page ── */
+  .page-wrap {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--surface);
+    font-family: var(--font);
+    color: var(--ink);
+  }
+
+  .upload-card {
+    width: 100%;
+    max-width: 960px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: hidden;
+    transition: box-shadow var(--transition);
+  }
+  .upload-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  @media (min-width: 768px) {
+    .upload-card {
+      grid-template-columns: 55% 45%;
+    }
+  }
+
+  /* ── left: drop area ── */
+  .drop-area {
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f7f7f4;
+    border-right: 1px solid var(--border);
+    min-height: 420px;
+  }
+  @media (max-width: 767px) {
+    .drop-area { border-right: none; border-bottom: 1px solid var(--border); min-height: 280px; }
+  }
+
+  .dropbox {
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 4/3;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dropbox:hover, .dropbox.hovering {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .dropbox.has-file {
+    border: 2px solid var(--accent);
+    padding: 6px;
+    background: #fff;
+  }
+  .dropbox.has-file .dropbox-content { display: none; }
+
+  .dropbox img#imgPreview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    display: none;
+  }
+
+  /* upload icon */
+  .upload-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: grid;
+    place-items: center;
+    margin-bottom: 4px;
+  }
+  .upload-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .dropbox-content { text-align: center; }
+  .dropbox-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .dropbox-label strong {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .dropbox-formats {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    letter-spacing: 0.3px;
+  }
+
+  /* ── right: controls ── */
+  .controls-area {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .page-heading {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin: 0;
+  }
+  .page-sub {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 4px 0 0;
+  }
+
+  /* file name display */
+  .file-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fafaf7;
+    text-align: center;
+    transition: all var(--transition);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-label.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-light);
+    font-weight: 500;
+  }
+
+  /* buttons */
+  .btn-analyze {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    transition: background var(--transition), transform 0.15s ease, box-shadow var(--transition);
+  }
+  .btn-analyze:hover:not(:disabled) {
+    background: var(--accent-hover);
+    box-shadow: 0 4px 16px rgba(61, 124, 74, 0.25);
+    transform: translateY(-1px);
+  }
+  .btn-analyze:active:not(:disabled) { transform: translateY(0); }
+  .btn-analyze:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .btn-analyze svg {
+    width: 18px; height: 18px;
+    fill: none; stroke: currentColor;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .btn-browse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: var(--font);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .btn-browse:hover {
+    border-color: var(--border-hover);
+    color: var(--ink);
+    background: #f7f7f4;
+  }
+
+  /* divider line */
+  .sep {
+    height: 1px;
+    background: var(--border);
+    margin: 0;
+  }
+
+  /* crop tags */
+  .crop-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .crop-chip {
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    background: #fff;
+    transition: all var(--transition);
+  }
+  .crop-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* tip text */
+  .tip-text {
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* flash toasts */
+  .flash-msg {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #fef3f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn 0.3s ease;
+  }
+  .flash-msg.success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+  }
+  .flash-msg .dismiss {
+    cursor: pointer;
+    opacity: 0.5;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .flash-msg .dismiss:hover { opacity: 1; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+  }
+</style>
+
+<section class="page-wrap">
+  <div class="upload-card">
+    <!-- LEFT — Drop zone -->
+    <div class="drop-area">
+      <div class="dropbox" id="dropbox">
+        <div class="dropbox-content">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </div>
+          <p class="dropbox-label">
+            Drag your image here, or <strong id="browseTrigger">browse</strong>
+          </p>
+          <p class="dropbox-formats">JPG, PNG or GIF — up to 16 MB</p>
+        </div>
+        <img id="imgPreview" alt="Selected image preview" />
+      </div>
+    </div>
+
+    <!-- RIGHT — Controls -->
+    <div class="controls-area">
+      <div>
+        <h2 class="page-heading">Detect crop disease</h2>
+        <p class="page-sub">
+          Upload a photo of an affected leaf and our model will identify the disease and suggest treatment.
+        </p>
+      </div>
+
+      <form method="POST" action="/upload" enctype="multipart/form-data" id="uploadForm">
+        <input id="fileInput" name="file" type="file" accept="image/*" hidden required />
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="file-label" id="fileLabel">No file selected</div>
+
+          <button type="submit" class="btn-analyze" id="analyzeBtn" disabled>
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            Analyze leaf
+          </button>
+        </div>
+      </form>
+
+      <button class="btn-browse" id="browseBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+        Choose from files
+      </button>
+
+      <div class="sep"></div>
+
+      <div>
+        <p class="tip-text" style="margin: 0 0 8px; font-weight: 500; color: var(--ink-soft);">
+          Supported crops
+        </p>
+        <div class="crop-list">
+          <span class="crop-chip">Corn (Maize)</span>
+          <span class="crop-chip">Grape</span>
+          <span class="crop-chip">Tomato</span>
+        </div>
+      </div>
+
+      <p class="tip-text">
+        For accurate results, use a well-lit, close-up photo of a single leaf
+        showing the affected area.
+      </p>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% for message in messages %}
+            <div class="flash-msg {% if 'success' in message|lower %}success{% endif %}">
+              <span>{{ message }}</span>
+              <span class="dismiss" onclick="this.parentElement.remove();">&times;</span>
+            </div>
+          {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  const fileInput  = document.getElementById('fileInput');
+  const fileLabel  = document.getElementById('fileLabel');
+  const dropbox    = document.getElementById('dropbox');
+  const preview    = document.getElementById('imgPreview');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const browseBtn  = document.getElementById('browseBtn');
+  const browseTrig = document.getElementById('browseTrigger');
+
+  function openPicker() { fileInput.click(); }
+
+  function showFile(file) {
+    if (!file) return;
+    fileLabel.textContent = file.name;
+    fileLabel.classList.add('active');
+    analyzeBtn.disabled = false;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      dropbox.classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Click handlers
+  dropbox.addEventListener('click', openPicker);
+  browseBtn.addEventListener('click', openPicker);
+  browseTrig.addEventListener('click', function (e) { e.stopPropagation(); openPicker(); });
+
+  fileInput.addEventListener('change', function () {
+    showFile(this.files && this.files[0]);
+  });
+
+  // Drag & Drop
+  ['dragenter', 'dragover'].forEach(function (evt) {
+    dropbox.addEventListener(evt, function (e) { e.preventDefault(); dropbox.classList.add('hovering'); });
+  });
+  ['dragleave', 'drop'].forEach(function (evt) {
+    dropbox.addEventListener(evt, function (e) { e.preventDefault(); dropbox.classList.remove('hovering'); });
+  });
+  dropbox.addEventListener('drop', function (e) {
+    var dt = e.dataTransfer;
+    if (!dt || !dt.files || !dt.files.length) return;
+    var transfer = new DataTransfer();
+    transfer.items.add(dt.files[0]);
+    fileInput.files = transfer.files;
+    showFile(dt.files[0]);
+  });
+
+  // Auto-dismiss flash messages
+  setTimeout(function () {
+    document.querySelectorAll('.flash-msg').forEach(function (el) {
+      el.style.transition = 'opacity 0.4s, transform 0.4s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-6px)';
+      setTimeout(function () { el.remove(); }, 450);
+    });
+  }, 5000);
+})();
+</script>
+
+{% endblock body %}
