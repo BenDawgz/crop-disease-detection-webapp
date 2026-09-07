@@ -42,5 +42,5 @@ RUN mkdir -p static/shots
 # Expose port
 EXPOSE 5000
 
-# Use single worker to stay within free tier memory
-CMD gunicorn --bind 0.0.0.0:${PORT:-5000} --timeout 300 --workers 1 --threads 2 --preload app:app
+# Use one worker/thread so TensorFlow inference stays within trial-tier memory.
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --timeout 300 --workers 1 --threads 1 app:app"]
